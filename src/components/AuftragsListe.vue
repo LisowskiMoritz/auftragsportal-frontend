@@ -1,30 +1,44 @@
 <script setup lang="ts">
-const auftraege = [
-  {
-    id: 1,
-    bezeichnung: 'Schloss gangbar machen und Schlüssel anfertigen',
-    status: 'In Bearbeitung',
-    kundenhinweis: 'Das Schloss wird gereinigt und geprüft.',
-  },
-  {
-    id: 2,
-    bezeichnung: 'Zylinderbestellung Hausverwaltung',
-    status: 'Abholbereit',
-    kundenhinweis: 'Ihre Bestellung kann im Laden abgeholt werden.',
-  },
-  {
-    id: 3,
-    bezeichnung: 'Zeichnung für Briefkastenanlage anfertigen',
-    status: 'in Arbeit',
-    kundenhinweis: 'Anzahl der Kästen, Klingeltafel und Material klären',
-  },
-]
+import { ref, onMounted } from 'vue'
+
+interface Auftrag {
+  id: number
+  bezeichnung: string
+  status: string
+  kundenhinweis: string
+}
+
+const auftraege = ref<Auftrag[]>([])
+const ladeFehler = ref('')
+const laedt = ref(true)
+
+onMounted(async () => {
+  try {
+    const antwort = await fetch(
+        'https://auftragsportal-backend.onrender.com/auftraege',
+    )
+
+    if (!antwort.ok) {
+      throw new Error('Abruf fehlgeschlagen')
+    }
+
+    auftraege.value = await antwort.json()
+  } catch {
+    ladeFehler.value = 'Die Aufträge konnten nicht geladen werden.'
+  } finally {
+    laedt.value = false
+  }
+})
 </script>
+
 <template>
   <section>
     <h2>Aufträge</h2>
 
-    <ul>
+    <p v-if="laedt">Aufträge werden geladen …</p>
+    <p v-else-if="ladeFehler">{{ ladeFehler }}</p>
+
+    <ul v-else>
       <li v-for="auftrag in auftraege" :key="auftrag.id">
         <h3>{{ auftrag.bezeichnung }}</h3>
         <p>Status: {{ auftrag.status }}</p>
